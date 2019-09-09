@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw"
+	xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+    <flow name="vcores-used-organization-csvFlow">
+    		<enricher target="#[flowVars.MULE_CORRELATION_ID]" doc:name="Message Enricher">
+			<flow-ref name="check-correlationFlow" doc:name="check-correlationFlow" />
+		</enricher>
+		<flow-ref name="authenticate-with-anypointFlow" doc:name="Authenticate w/ Anypoint" />
+		<logger
+			message="CID: #[flowVars.MULE_CORRELATION_ID] :: Access Token: #[payload.access_token]"
+			level="INFO" doc:name="Log Access Token" />
+        <flow-ref name="lookup-organization-nameFlow" doc:name="Lookup Organization Name"/>
+		<flow-ref name="retrieve-environmentsFlow" doc:name="Retrieve Environments" />
+		<collection-splitter doc:name="Environments Splitter">
+			<expression-message-info-mapping
+				messageIdExpression="#[message.id]" correlationIdExpression="#[message.correlationId]" />
+		</collection-splitter>
+		<enricher target="#[flowVars.applicationsByEnv]" doc:name="Message Enricher">
+			<flow-ref name="applications-retrieveFlow" doc:name="Retrieve Applications" />
+		</enricher>
+		<set-payload value="#[flowVars.applicationsByEnv]"
+			doc:name="Applications by Environment" />
+		<collection-aggregator failOnTimeout="true"
+			doc:name="Environments Aggregator" />
+		<dw:transform-message doc:name="Add Organization Details">
+			<dw:set-payload><![CDATA[%dw 1.0
+%input payload application/java
+%output application/java
+%function sumTotalVCores(type) ((sum payload[?($.type == type)].totalVCores[?($ > 0)]) default 0)
+%var orgSandboxTotalVCores = sumTotalVCores("sandbox")
+%var orgProductionTotalVCores = sumTotalVCores("production")
+---
+{
+	organization: {
+		name: flowVars.organizationName,
+		environments: payload,
+		totalVCoresSandbox: orgSandboxTotalVCores as :number, 
+		totalVCoresProduction: orgProductionTotalVCores as :number
+	} 
+
+}]]></dw:set-payload>
+		</dw:transform-message>
+		<logger
+			message="CID: #[flowVars.MULE_CORRELATION_ID] :: Total Sandbox vCores: #[payload.organization.totalVCoresSandbox] Total Production vCores: #[payload.organization.totalVCoresProduction]"
+			level="INFO" doc:name="Log Total vCores" />
+		<dw:transform-message doc:name="Construct Payload for CSV">
+			<dw:set-payload><![CDATA[%dw 1.0
+%input payload application/java
+%output application/csv
+---
+flatten (payload.organization.environments map ((envItem, envIndex) -> (
+	
+	envItem.applications map ((appItem, appIndex)  -> {
+    		environmentName: envItem.name,
+    		environmentType: envItem.type,
+    		appName: appItem.name,
+    		appWorkerSize: appItem.workerSize,
+    		appWorkers: appItem.workers,
+    		runtimeVersion: appItem.runtimeVersion,
+    		status: appItem.status
+    		
+    	}) when ((envItem != null) and ((sizeOf envItem) > 0)) otherwise "")
+    	
+))	]]></dw:set-payload>
+		</dw:transform-message>
+    </flow>
+
+	<flow name="vCores-used-organizationFlow">
+		<enricher target="#[flowVars.MULE_CORRELATION_ID]" doc:name="Message Enricher">
+			<flow-ref name="check-correlationFlow" doc:name="check-correlationFlow" />
+		</enricher>
+		<flow-ref name="authenticate-with-anypointFlow" doc:name="Authenticate w/ Anypoint" />
+		<logger
+			message="CID: #[flowVars.MULE_CORRELATION_ID] :: Access Token: #[payload.access_token]"
+			level="INFO" doc:name="Log Access Token" />
+        <flow-ref name="lookup-organization-nameFlow" doc:name="Lookup Organization Name"/>
+		<flow-ref name="retrieve-environmentsFlow" doc:name="Retrieve Environments" />
+		<collection-splitter doc:name="Environments Splitter">
+			<expression-message-info-mapping
+				messageIdExpression="#[message.id]" correlationIdExpression="#[message.correlationId]" />
+		</collection-splitter>
+		<enricher target="#[flowVars.applicationsByEnv]" doc:name="Message Enricher">
+			<flow-ref name="applications-retrieveFlow" doc:name="Retrieve Applications" />
+		</enricher>
+		<set-payload value="#[flowVars.applicationsByEnv]"
+			doc:name="Applications by Environment" />
+		<collection-aggregator failOnTimeout="true"
+			doc:name="Environments Aggregator" />
+		<dw:transform-message doc:name="Add Organization Details">
+			<dw:set-payload><![CDATA[%dw 1.0
+%input payload application/java
+%output application/java
+%function sumTotalVCores(type) ((sum payload[?($.type == type)].totalVCores[?($ > 0)]) default 0)
+%var orgSandboxTotalVCores = sumTotalVCores("sandbox")
+%var orgProductionTotalVCores = sumTotalVCores("production")
+---
+{
+	organization: {
+		name: flowVars.organizationName,
+		environments: payload,
+		totalVCoresSandbox: orgSandboxTotalVCores as :number,
+		totalVCoresProduction: orgProductionTotalVCores as :number
+	} 
+
+}]]></dw:set-payload>
+		</dw:transform-message>
+		<logger
+			message="CID: #[flowVars.MULE_CORRELATION_ID] :: Total Sandbox vCores: #[payload.organization.totalVCoresSandbox] Total Production vCores: #[payload.organization.totalVCoresProduction]"
+			level="INFO" doc:name="Log Total vCores" />
+		<dw:transform-message doc:name="Add API Status">
+			<dw:set-payload><![CDATA[%dw 1.0
+%input payload application/java
+%output application/json
+---
+{
+	apiStatus: {
+    		name: "Anypoint KPI System API",
+	    status: "OK",
+ 	   	statusCode: "200",
+    		description: "vCores successfully retrieved for organization: " ++ flowVars.organizationName ++ ".",
+	    link: "http://anypoint.kpi.system.api/200.html",
+	    	transactionId: flowVars.MULE_CORRELATION_ID,
+	    	timestamp: now as :datetime
+    },
+    organization: payload.organization
+ }   ]]></dw:set-payload>
+		</dw:transform-message>
+	</flow>
+	<flow name="vCores-used-environmentFlow">
+		<enricher target="#[flowVars.MULE_CORRELATION_ID]" doc:name="Message Enricher">
+			<flow-ref name="check-correlationFlow" doc:name="check-correlationFlow" />
+		</enricher>
+		<flow-ref name="authenticate-with-anypointFlow" doc:name="Authenticate w/ Anypoint" />
+		<logger
+			message="CID: #[flowVars.MULE_CORRELATION_ID] :: Access Token: #[payload.access_token]"
+			level="INFO" doc:name="Log Access Token" />
+        <flow-ref name="lookup-organization-nameFlow" doc:name="Lookup Organization Name"/>
+		<flow-ref name="retrieve-environmentFlow" doc:name="Retrieve Environment" />
+		<choice doc:name="Does environment exist?">
+			<when expression="#[payload == empty]">
+				<logger
+					message="CID: #[flowVars.MULE_CORRELATION_ID] :: Environment '#[flowVars.environmentName]' not found."
+					level="INFO" doc:name="Log Environment Not Found" />
+				<scripting:transformer doc:name="Throw Environment Not Found Exception">
+					<scripting:script engine="Groovy"><![CDATA[throw new org.mule.module.apikit.exception.NotFoundException("Environment does not exist. - TransactionID: " + message.getInvocationProperty('MULE_CORRELATION_ID'));
+]]></scripting:script>
+				</scripting:transformer>
+			</when>
+			<otherwise>
+				<flow-ref name="applications-retrieveFlow" doc:name="Retrieve Applications" />
+				<logger
+					message="CID: #[flowVars.MULE_CORRELATION_ID] :: Total vCores: #[payload.totalVCores]  vCoreType: #[payload.type]"
+					level="INFO" doc:name="Log Total vCores" />
+				<dw:transform-message doc:name="Add API Status">
+					<dw:set-payload><![CDATA[%dw 1.0
+%input payload application/java
+%output application/json
+---
+{
+	apiStatus: {
+    		name: "Anypoint KPI System API",
+	    status: "OK",
+ 	   	statusCode: "200",
+    		description: "vCores successfully retrieved for organization: " ++ flowVars.organizationName ++ " and environment: " ++ flowVars.environmentName ++ ".",
+	    link: "http://anypoint.kpi.system.api/200.html",
+	    	transactionId: flowVars.MULE_CORRELATION_ID,
+	    	timestamp: now as :datetime
+    },
+    environment: payload
+}]]></dw:set-payload>
+				</dw:transform-message>
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="vCores-used-applicationFlow">
+		<enricher target="#[flowVars.MULE_CORRELATION_ID]" doc:name="Message Enricher">
+			<flow-ref name="check-correlationFlow" doc:name="check-correlationFlow" />
+		</enricher>
+		<flow-ref name="authenticate-with-anypointFlow" doc:name="Authenticate w/ Anypoint" />
+		<logger
+			message="CID: #[flowVars.MULE_CORRELATION_ID] :: Access Token: #[payload.access_token]"
+			level="INFO" doc:name="Log Access Token" />
+        <flow-ref name="lookup-organization-nameFlow" doc:name="Lookup Organization Name"/>
+		<flow-ref name="retrieve-environmentFlow" doc:name="Retrieve Environment" />
+        <logger message="--&gt; Environment Payload: #[payload]" level="INFO" doc:name="Logger"/>
+		<choice doc:name="Does environment exist?">
+			<when expression="#[payload == empty]">
+				<logger
+					message="CID: #[flowVars.MULE_CORRELATION_ID] :: Environment '#[flowVars.environmentName]' not found."
+					level="INFO" doc:name="Log Environment Not Found" />
+				<scripting:transformer doc:name="Throw Environment Not Found Exception">
+					<scripting:script engine="Groovy"><![CDATA[throw new org.mule.module.apikit.exception.NotFoundException("Environment does not exist. - TransactionID:" + message.getInvocationProperty('MULE_CORRELATION_ID'));
+]]></scripting:script>
+				</scripting:transformer>
+			</when>
+			<otherwise>
+				<flow-ref name="applications-retrieveFlow" doc:name="Retrieve Applications" />
+				<dw:transform-message doc:name="Retrieve Application">
+					<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+(payload.applications filter ($.name == flowVars.applicationName))[0]]]></dw:set-payload>
+				</dw:transform-message>
+				<choice doc:name="Does application exist?">
+					<when expression="#[payload == empty]">
+						<logger
+							message="CID: #[flowVars.MULE_CORRELATION_ID] :: Application '#[flowVars.applicationName]' not found."
+							level="INFO" doc:name="Log Application Not Found" />
+						<scripting:transformer doc:name="Throw Application Not Found Exception">
+							<scripting:script engine="Groovy"><![CDATA[throw new org.mule.module.apikit.exception.NotFoundException("Application does not exist - TransactionID: " + message.getInvocationProperty('MULE_CORRELATION_ID'));]]></scripting:script>
+						</scripting:transformer>
+					</when>
+					<otherwise>
+						<logger
+							message="CID: #[flowVars.MULE_CORRELATION_ID] :: Total vCores: #[payload.totalVCores] for #[flowVars.applicationName]."
+							level="INFO" doc:name="Log Total vCores" />
+						<dw:transform-message doc:name="Add API Status">
+							<dw:set-payload><![CDATA[%dw 1.0
+%input payload application/java
+%output application/json
+---
+{
+	apiStatus: {
+    		name: "Anypoint KPI System API",
+	    status: "OK",
+ 	   	statusCode: "200",
+		description: "vCores successfully retrieved for organization: " ++ flowVars.organizationName ++ " and environment: " ++ flowVars.environmentName ++ " and application: " ++ flowVars.applicationName ++ ".",
+	    link: "http://anypoint.kpi.system.api/200.html",
+	    	transactionId: flowVars.MULE_CORRELATION_ID,
+	    	timestamp: now as :datetime
+    },
+    application: payload,
+    totalVCores: payload.totalVCores as :number
+}]]></dw:set-payload>
+						</dw:transform-message>
+					</otherwise>
+				</choice>
+			</otherwise>
+		</choice>
+	</flow>
+
+</mule>

@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw"
+	xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+    <flow name="runtimeVersions-organizationFlow">
+        <enricher target="#[flowVars.MULE_CORRELATION_ID]" doc:name="Message Enricher">
+            <flow-ref name="check-correlationFlow" doc:name="check-correlationFlow"/>
+        </enricher>
+        <flow-ref name="authenticate-with-anypointFlow" doc:name="authenticate-with-anypointFlow"/>
+        <logger message="CID: #[flowVars.MULE_CORRELATION_ID] :: Access Token: #[payload.access_token]" level="INFO" doc:name="Log Access Token"/>
+        <flow-ref name="lookup-organization-nameFlow" doc:name="Lookup Organization Name"/>
+        <flow-ref name="retrieve-environmentsFlow" doc:name="Retrieve Environments"/>
+        <collection-splitter doc:name="Environments Splitter">
+            <expression-message-info-mapping messageIdExpression="#[message.id]" correlationIdExpression="#[message.correlationId]"/>
+        </collection-splitter>
+        <enricher target="#[flowVars.applicationsByEnv]" doc:name="Message Enricher">
+            <flow-ref name="runtimeVersions-retrieveFlow" doc:name="Retrieve Runtime Versions"/>
+        </enricher>
+        <set-payload value="#[flowVars.applicationsByEnv]" doc:name="Runtime Versions by Environment"/>
+        <collection-aggregator failOnTimeout="true" doc:name="Environments Aggregator"/>
+        <logger message="CID: #[flowVars.MULE_CORRELATION_ID] :: Aggregated Payload: #[payload]" level="INFO" doc:name="Log Aggregated Payload"/>
+        <flow-ref name="get-total-runtime-listFlow" doc:name="Assemble Total Runtime Versions for Organization"/>
+        <dw:transform-message doc:name="Add Organization Details">
+        		<dw:input-payload mimeType="application/java"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/java
+%output application/java
+---
+{
+	organization: {
+		name: flowVars.organizationName,
+		environments: payload,
+		totalApplications: sum payload..applicationsUsing,
+		totalRuntimeVersions: flowVars.totalList
+	}	
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <dw:transform-message doc:name="Add API Status">
+        		<dw:input-payload mimeType="application/java"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/java
+%output application/json
+---
+{
+	apiStatus: {
+    		name: "Anypoint KPI System API",
+	    status: "OK",
+ 	   	statusCode: "200",
+    		description: "Runtime versions successfully retrieved for organization: " ++ flowVars.organizationName ++ ".",
+	    link: "http://anypoint.kpi.system.api/200.html",
+    		transactionId: flowVars.MULE_CORRELATION_ID,
+    		timestamp: now as :datetime
+    },
+    organization: payload.organization
+}   ]]></dw:set-payload>
+        </dw:transform-message>
+    </flow>
+    <flow name="runtimeVersions-environmentFlow">
+    	<enricher target="#[flowVars.MULE_CORRELATION_ID]" doc:name="Message Enricher">
+			<flow-ref name="check-correlationFlow" doc:name="check-correlationFlow" />
+		</enricher>
+        <flow-ref name="authenticate-with-anypointFlow" doc:name="authenticate-with-anypointFlow"/>
+        <logger message="CID: #[flowVars.MULE_CORRELATION_ID] :: Access Token: #[payload.access_token]" level="INFO" doc:name="Log Access Token"/>
+        <flow-ref name="lookup-organization-nameFlow" doc:name="Lookup Organization Name"/>
+        <flow-ref name="retrieve-environmentFlow" doc:name="Retrieve Environment"/>
+        <choice doc:name="Does environment exist?">
+            <when expression="#[payload == empty]">
+                <logger message="CID: #[flowVars.MULE_CORRELATION_ID] :: Environment '#[flowVars.environmentName]' not found." level="INFO" doc:name="Log Environment Not Found"/>
+                <scripting:transformer doc:name="Throw Environment Not Found Exception">
+                    <scripting:script engine="Groovy"><![CDATA[throw new org.mule.module.apikit.exception.NotFoundException("Environment does not exist. - TransactionID: " + message.getInvocationProperty('MULE_CORRELATION_ID'));
+]]></scripting:script>
+                </scripting:transformer>
+            </when>
+            <otherwise>
+                <flow-ref name="runtimeVersions-retrieveFlow" doc:name="Retrieve Runtime Versions"/>
+                <dw:transform-message doc:name="Add API Status">
+                    <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/java
+%output application/json
+---
+{
+	apiStatus: {
+    		name: "Anypoint KPI System API",
+	    status: "OK",
+ 	   	statusCode: "200",
+    		description: "Runtime Versions successfully retrieved for organization: " ++ flowVars.organizationName ++ " and environment: " ++ flowVars.environmentName ++ ".",
+	    link: "http://anypoint.kpi.system.api/200.html",
+    		transactionId: flowVars.MULE_CORRELATION_ID,
+    		timestamp: now as :datetime
+    },
+    environment: payload,
+    totalApplications: sum payload..applicationsUsing
+}]]></dw:set-payload>
+                </dw:transform-message>
+            </otherwise>
+        </choice>
+    </flow>
+    <flow name="runtimeVersions-retrieveFlow">
+        <set-variable variableName="currentEnvironment" value="#[payload]" doc:name="Set Current Environment Values"/>
+        <http:request config-ref="HTTP_Request_Configuration" path="/cloudhub/api/v2/applications" method="GET" doc:name="Retrieve Applications by Environment">
+            <http:request-builder>
+                <http:header headerName="Authorization" value="#[flowVars.bearerToken]"/>
+                <http:header headerName="X-ANYPNT-ENV-ID" value="#[payload.envID]"/>
+                <http:header headerName="Content-Type" value="application/json"/>
+            </http:request-builder>
+        </http:request>
+        <flow-ref name="runtimeVersions-extractFlow" doc:name="Extract Runtime Versions"/>
+        <dw:transform-message doc:name="Add Environment Details">
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/java
+%output application/java
+---
+{
+	id: flowVars.currentEnvironment.envID,
+	name: flowVars.currentEnvironment.envName,
+	type: flowVars.currentEnvironment.envType,
+	runtimeVersions: payload 
+}]]></dw:set-payload>
+        </dw:transform-message>
+    </flow>
+	<flow name="runtimeVersions-extractFlow">
+        <logger message="CID: #[flowVars.MULE_CORRELATION_ID] :: Response: #[message.payloadAs(java.lang.String)]" level="INFO" doc:name="Log Payload"/>
+        <dw:transform-message doc:name="Parse Runtime Versions Response">
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/json
+%output application/java
+---
+payload map {
+	name: $.domain,
+	runtimeVersion: $.muleVersion.version
+}]]></dw:set-payload>
+            <dw:set-variable variableName="runtimeVersions"><![CDATA[%dw 1.0
+%input payload application/json
+%output application/java
+---
+payload.muleVersion.version distinctBy $ when (sizeOf payload) > 0 otherwise []]]></dw:set-variable>
+        </dw:transform-message>
+        <choice doc:name="Are applications deployed?">
+            <when expression="#[dw('sizeOf payload')&gt;0]">
+                <dw:transform-message doc:name="Resolve Runtime Versions Used">
+                    <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/json
+%output application/java
+---
+(payload.runtimeVersion distinctBy $) map ((rtVersion, position) -> 
+	{
+		version: rtVersion,
+		applicationsUsing: sizeOf (payload filter ($.runtimeVersion == rtVersion))
+	})]]></dw:set-payload>
+                </dw:transform-message>
+            </when>
+            <otherwise>
+                <logger message="CID: #[flowVars.MULE_CORRELATION_ID] :: No applications deployed." level="INFO" doc:name="Log 'No Applications'"/>
+            </otherwise>
+        </choice>
+    </flow>
+    <flow name="get-total-runtime-listFlow">
+        <dw:transform-message doc:name="Get Runtime Application List">
+        		<dw:input-payload mimeType="application/java"/>
+            <dw:set-variable variableName="runtimeApplicationList"><![CDATA[%dw 1.0
+%input payload application/java
+%output application/java
+---
+flatten payload.*runtimeVersions]]></dw:set-variable>
+        </dw:transform-message>
+        <logger message="CID: #[flowVars.MULE_CORRELATION_ID] :: Runtime Application List: #[flowVars.runtimeApplicationList]" level="INFO" doc:name="Log Runtime Application List"/>
+        <dw:transform-message doc:name="Get Runtime List">
+        		<dw:input-payload mimeType="application/java"/>
+            <dw:set-variable variableName="runtimeList"><![CDATA[%dw 1.0
+%input payload application/java
+%output application/java
+---
+flowVars.runtimeApplicationList.*version distinctBy $]]></dw:set-variable>
+        </dw:transform-message>
+        <logger message="CID: #[flowVars.MULE_CORRELATION_ID] :: Runtime List: #[flowVars.runtimeList]" level="INFO" doc:name="Log List of Unique Runtimes"/>
+        <dw:transform-message doc:name="Get Total Runtimes">
+        		<dw:input-payload mimeType="application/java"/>
+            <dw:set-variable variableName="totalList"><![CDATA[%dw 1.0
+%input payload application/java
+%output application/java
+---
+flowVars.runtimeList map ((runtime, index) -> {
+	version: runtime,
+	applicationsUsing: ((flowVars.runtimeApplicationList filter $.version == runtime) map $.applicationsUsing) reduce ($$+$)
+})]]></dw:set-variable>
+        </dw:transform-message>
+        <logger message="CID: #[flowVars.MULE_CORRELATION_ID] :: Total List: #[flowVars.totalList]" level="INFO" doc:name="Log Total Runtimes"/>
+    </flow>
+
+</mule>

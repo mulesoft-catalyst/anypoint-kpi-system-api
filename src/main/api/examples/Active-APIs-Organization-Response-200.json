@@ -1,0 +1,523 @@
+{
+    "apiStatus": {
+        "name": "Anypoint KPI System API",
+        "status": "OK",
+        "statusCode": "200",
+        "description": "Active APIs successfully retrieved.",
+        "link": "http://anypoint.kpi.system.api/200.html",
+        "transactionId": "9ac9ab90-9f53-11e8-9e14-c4b301c8ce19"
+    },
+    "organization": {
+        "name": "rodanandfields",
+        "environments": [
+            {
+                "environment": {
+                    "id": "be5891dd-fe26-4f23-afdc-9b0865b4cab8",
+                    "name": "QA2-Atlas",
+                    "type": "sandbox",
+                    "totalSystemAPIs": 0,
+                    "totalProcessAPIs": 0,
+                    "totalExperienceAPIs": 0,
+                    "totalActiveAPIs": 0,
+                    "apis": {
+                        "system": [],
+                        "process": [],
+                        "experience": []
+                    }
+                }
+            },
+            {
+                "environment": {
+                    "id": "a10dc6d6-45e4-4103-a9ea-d23fc4239a61",
+                    "name": "QA-Atlas",
+                    "type": "sandbox",
+                    "totalSystemAPIs": 12,
+                    "totalProcessAPIs": 3,
+                    "totalExperienceAPIs": 0,
+                    "totalActiveAPIs": 15,
+                    "apis": {
+                        "system": [
+                            {
+                                "name": "rf-tst2-lexis-nexis-system-api",
+                                "workerSize": 0.1,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-tst2-vantiv-system-api",
+                                "workerSize": 0.2,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-tst2-amq-system-api",
+                                "workerSize": 0.2,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-tst2-email-validation-system-api",
+                                "workerSize": 0.1,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-tst2-solr-system-api",
+                                "workerSize": 0.2,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-tst2-hybris-system-api",
+                                "workerSize": 0.1,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-tst2-tax-system-api",
+                                "workerSize": 0.1,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-tst2-heirloom-system-api",
+                                "workerSize": 0.1,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-tst2-ecc-system-api",
+                                "workerSize": 0.2,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-tst2-rfl-system-api",
+                                "workerSize": 0.1,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-tst2-opsveda-system-api",
+                                "workerSize": 0.2,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-tst2-rfl-orders-system-api",
+                                "workerSize": 0.1,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            }
+                        ],
+                        "process": [
+                            {
+                                "name": "rf-tst2-solr-process-api",
+                                "workerSize": 0.2,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-tst2-3pl-process-api",
+                                "workerSize": 0.1,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-tst2-ecc-process-api",
+                                "workerSize": 0.2,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            }
+                        ],
+                        "experience": []
+                    }
+                }
+            },
+            {
+                "environment": {
+                    "id": "4bc031e1-d5f6-4a1c-a0e0-81fda9164000",
+                    "name": "Production",
+                    "type": "production",
+                    "totalSystemAPIs": 0,
+                    "totalProcessAPIs": 0,
+                    "totalExperienceAPIs": 0,
+                    "totalActiveAPIs": 0,
+                    "apis": {
+                        "system": [],
+                        "process": [],
+                        "experience": []
+                    }
+                }
+            },
+            {
+                "environment": {
+                    "id": "3af2c39f-a5ea-4305-a083-7deca098d233",
+                    "name": "QA",
+                    "type": "sandbox",
+                    "totalSystemAPIs": 0,
+                    "totalProcessAPIs": 0,
+                    "totalExperienceAPIs": 0,
+                    "totalActiveAPIs": 0,
+                    "apis": {
+                        "system": [],
+                        "process": [],
+                        "experience": []
+                    }
+                }
+            },
+            {
+                "environment": {
+                    "id": "0dec6186-c40a-4b85-b7ab-7a2b587739a5",
+                    "name": "Development",
+                    "type": "sandbox",
+                    "totalSystemAPIs": 0,
+                    "totalProcessAPIs": 0,
+                    "totalExperienceAPIs": 0,
+                    "totalActiveAPIs": 0,
+                    "apis": {
+                        "system": [],
+                        "process": [],
+                        "experience": []
+                    }
+                }
+            },
+            {
+                "environment": {
+                    "id": "d5df9a65-be34-42df-a351-e45f9bd7c493",
+                    "name": "Hotfix",
+                    "type": "sandbox",
+                    "totalSystemAPIs": 0,
+                    "totalProcessAPIs": 0,
+                    "totalExperienceAPIs": 0,
+                    "totalActiveAPIs": 0,
+                    "apis": {
+                        "system": [],
+                        "process": [],
+                        "experience": []
+                    }
+                }
+            },
+            {
+                "environment": {
+                    "id": "e4eaf280-1bee-4a59-a124-9d86dfe55872",
+                    "name": "Design-Coupa",
+                    "type": "design",
+                    "totalSystemAPIs": 0,
+                    "totalProcessAPIs": 0,
+                    "totalExperienceAPIs": 0,
+                    "totalActiveAPIs": 0,
+                    "apis": {
+                        "system": [],
+                        "process": [],
+                        "experience": []
+                    }
+                }
+            },
+            {
+                "environment": {
+                    "id": "eb5f21a7-5c86-4e95-b65a-5cbce49f54e4",
+                    "name": "DEV-Atlas",
+                    "type": "sandbox",
+                    "totalSystemAPIs": 13,
+                    "totalProcessAPIs": 3,
+                    "totalExperienceAPIs": 0,
+                    "totalActiveAPIs": 16,
+                    "apis": {
+                        "system": [
+                            {
+                                "name": "rf-dev2-lexis-nexis-system-api",
+                                "workerSize": 0.1,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-dev2-rfl-system-api",
+                                "workerSize": 0.1,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-dev2-rfl-orders-system-api",
+                                "workerSize": 0.1,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-dev2-solr-system-api",
+                                "workerSize": 0.2,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-dev2-heirloom-system-api",
+                                "workerSize": 0.1,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-dev2-tax-system-api",
+                                "workerSize": 0.1,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-dev2-vantiv-system-api",
+                                "workerSize": 0.2,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-i-dev2-rfl-system-api",
+                                "workerSize": 0.1,
+                                "workers": 2,
+                                "runtimeVersion": "3.9.1"
+                            },
+                            {
+                                "name": "rf-dev2-ecc-system-api",
+                                "workerSize": 0.2,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-dev2-amq-system-api",
+                                "workerSize": 0.2,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-dev2-opsveda-system-api",
+                                "workerSize": 0.2,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-dev2-email-validation-system-api",
+                                "workerSize": 0.1,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-dev2-hybris-system-api",
+                                "workerSize": 0.1,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            }
+                        ],
+                        "process": [
+                            {
+                                "name": "rf-dev2-solr-process-api",
+                                "workerSize": 0.2,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-dev2-3pl-process-api",
+                                "workerSize": 0.1,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-dev2-ecc-process-api",
+                                "workerSize": 0.2,
+                                "workers": 1,
+                                "runtimeVersion": "3.9.0"
+                            }
+                        ],
+                        "experience": []
+                    }
+                }
+            },
+            {
+                "environment": {
+                    "id": "d5884129-a64f-455e-8497-59bd67226072",
+                    "name": "QATemp",
+                    "type": "production",
+                    "totalSystemAPIs": 0,
+                    "totalProcessAPIs": 0,
+                    "totalExperienceAPIs": 0,
+                    "totalActiveAPIs": 0,
+                    "apis": {
+                        "system": [],
+                        "process": [],
+                        "experience": []
+                    }
+                }
+            },
+            {
+                "environment": {
+                    "id": "d60c0689-bfcc-4ef1-991a-94a58e7ae3d1",
+                    "name": "Design-Atlas",
+                    "type": "design",
+                    "totalSystemAPIs": 0,
+                    "totalProcessAPIs": 0,
+                    "totalExperienceAPIs": 0,
+                    "totalActiveAPIs": 0,
+                    "apis": {
+                        "system": [],
+                        "process": [],
+                        "experience": []
+                    }
+                }
+            },
+            {
+                "environment": {
+                    "id": "64528def-6022-46d2-9daa-001f2aa378c7",
+                    "name": "SB-Atlas",
+                    "type": "sandbox",
+                    "totalSystemAPIs": 0,
+                    "totalProcessAPIs": 0,
+                    "totalExperienceAPIs": 0,
+                    "totalActiveAPIs": 0,
+                    "apis": {
+                        "system": [],
+                        "process": [],
+                        "experience": []
+                    }
+                }
+            },
+            {
+                "environment": {
+                    "id": "4d9e0b30-7bf5-4a29-b737-80a83a088dcd",
+                    "name": "QA-Coupa",
+                    "type": "sandbox",
+                    "totalSystemAPIs": 0,
+                    "totalProcessAPIs": 0,
+                    "totalExperienceAPIs": 0,
+                    "totalActiveAPIs": 0,
+                    "apis": {
+                        "system": [],
+                        "process": [],
+                        "experience": []
+                    }
+                }
+            },
+            {
+                "environment": {
+                    "id": "3029fb7c-c185-470b-affc-44d289453c4e",
+                    "name": "Stage-Atlas",
+                    "type": "sandbox",
+                    "totalSystemAPIs": 12,
+                    "totalProcessAPIs": 3,
+                    "totalExperienceAPIs": 0,
+                    "totalActiveAPIs": 15,
+                    "apis": {
+                        "system": [
+                            {
+                                "name": "rf-ppd2-heirloom-system-api",
+                                "workerSize": 0.2,
+                                "workers": 4,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-ppd2-rfl-system-api",
+                                "workerSize": 1,
+                                "workers": 4,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-ppd2-email-validation-system-api",
+                                "workerSize": 0.2,
+                                "workers": 4,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-ppd2-solr-system-api",
+                                "workerSize": 0.2,
+                                "workers": 4,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-ppd2-hybris-system-api",
+                                "workerSize": 0.2,
+                                "workers": 4,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-ppd2-ecc-system-api",
+                                "workerSize": 1,
+                                "workers": 4,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-ppd2-rfl-orders-system-api",
+                                "workerSize": 0.2,
+                                "workers": 4,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-ppd2-amq-system-api",
+                                "workerSize": 0.2,
+                                "workers": 4,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-ppd2-opsveda-system-api",
+                                "workerSize": 0.2,
+                                "workers": 4,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-ppd2-vantiv-system-api",
+                                "workerSize": 0.2,
+                                "workers": 4,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-ppd2-lexis-nexis-system-api",
+                                "workerSize": 0.2,
+                                "workers": 4,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-ppd2-tax-system-api",
+                                "workerSize": 0.2,
+                                "workers": 4,
+                                "runtimeVersion": "3.9.0"
+                            }
+                        ],
+                        "process": [
+                            {
+                                "name": "rf-ppd2-solr-process-api",
+                                "workerSize": 0.2,
+                                "workers": 4,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-ppd2-3pl-process-api",
+                                "workerSize": 0.2,
+                                "workers": 4,
+                                "runtimeVersion": "3.9.0"
+                            },
+                            {
+                                "name": "rf-ppd2-ecc-process-api",
+                                "workerSize": 0.2,
+                                "workers": 4,
+                                "runtimeVersion": "3.9.0"
+                            }
+                        ],
+                        "experience": []
+                    }
+                }
+            },
+            {
+                "environment": {
+                    "id": "94bee085-cac8-44a8-b28a-c39fbef4a756",
+                    "name": "Staging",
+                    "type": "sandbox",
+                    "totalSystemAPIs": 0,
+                    "totalProcessAPIs": 0,
+                    "totalExperienceAPIs": 0,
+                    "totalActiveAPIs": 0,
+                    "apis": {
+                        "system": [],
+                        "process": [],
+                        "experience": []
+                    }
+                }
+            }
+        ],
+        "totalActiveAPIsSandbox": "46",
+        "totalActiveAPIsProduction": "0"
+    }
+}

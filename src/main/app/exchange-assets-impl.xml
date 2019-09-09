@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+    <flow name="get-exchange-assetsFlow">
+        <enricher target="#[flowVars.MULE_CORRELATION_ID]" doc:name="Message Enricher">
+            <flow-ref name="check-correlationFlow" doc:name="check-correlationFlow"/>
+        </enricher>
+        <flow-ref name="authenticate-with-anypointFlow" doc:name="Authenticate w/ Anypoint"/>
+        <logger message="CID: #[flowVars.MULE_CORRELATION_ID] :: Access Token: #[payload.access_token]" level="INFO" doc:name="Log Access Token"/>
+        <flow-ref name="get-assetsFlow" doc:name="Get Assets"/>
+    </flow>
+	<flow name="get-assetsFlow">
+		<!-- <logger message="ExecutionId: #[flowVars.executionId] - Get total assets" level="INFO" doc:name="Logger" /> -->
+		<dw:transform-message doc:name="Initialize Variables">
+			<dw:input-payload mimeType="application/java" />
+			<dw:set-variable variableName="offset" ><![CDATA[%dw 1.0
+%output application/java
+---
+0]]></dw:set-variable>
+			<dw:set-variable variableName="limit" ><![CDATA[%dw 1.0
+%output application/java
+---
+p('exchange.page.limit')]]></dw:set-variable>
+			<dw:set-variable variableName="assetsList" ><![CDATA[%dw 1.0
+%output application/java
+---
+[]]]></dw:set-variable>
+        		<dw:set-variable variableName="rootOrgId"><![CDATA[%dw 1.0
+%output application/java
+---
+flowVars.organizationId]]></dw:set-variable>
+		</dw:transform-message>
+		<flow-ref name="get-exchange-pagesFlow" doc:name="GET Exchange Pages" />
+        <logger message="CID: #[flowVars.MULE_CORRELATION_ID] :: Total Size of Asset List: #[flowVars.assetsList]" level="INFO" doc:name="Log Size of Total Asset List"/>
+        <dw:transform-message doc:name="Caclulate Number of Assets by Type">
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/java
+%output application/java
+%var total = sizeOf flowVars.assetsList
+%var assets = flowVars.assetsList
+---
+( { "total": total } ++
+(assets groupBy $.type mapObject (v, k) -> {
+  (k): sizeOf v
+})) when total > 0 otherwise {}]]></dw:set-payload>
+        </dw:transform-message>
+        <dw:transform-message doc:name="Add API Status">
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/java
+%output application/json
+---
+{
+	apiStatus: {
+    		name: "Anypoint KPI System API",
+	    status: "OK",
+ 	   	statusCode: "200",
+    		description: "Anypoint Exchange assets successfully retrieved.",
+    		transactionId: flowVars.MULE_CORRELATION_ID,
+    		timestamp: now as :datetime
+    },
+    assets: flowVars.assetsList,
+    assetBreakdown: payload
+}   ]]></dw:set-payload>
+        </dw:transform-message>
+	</flow>
+	<flow name="get-exchange-pagesFlow">
+		<logger message="CID: #[flowVars.MULE_CORRELATION_ID] :: Get total exchange assets with offset: #[flowVars.offset] and limit: #[flowVars.limit]" level="INFO"
+			doc:name="Log Offset and Limit" />
+		<http:request config-ref="HTTP_Request_Configuration" path="/exchange/api/v1/assets" method="GET" doc:name="GET Exchange Assets">
+			<http:request-builder>
+                <http:query-param paramName="organizationId" value="#[flowVars.rootOrgId]"/>
+                <http:query-param paramName="offset" value="#[flowVars.offset]"/>
+                <http:query-param paramName="limit" value="#[flowVars.limit]"/>
+                <http:header headerName="Authorization" value="#[flowVars.bearerToken]"/>
+			</http:request-builder>
+			<http:success-status-code-validator values="0..599" />
+		</http:request>
+		<choice doc:name="Successful Request?">
+			<when expression="#[message.inboundProperties['http.status']=='200']">
+                <logger message="--&gt; All Assets: #[message.payloadAs(java.lang.String)]" level="INFO" doc:name="Log All Assets"/>
+				<dw:transform-message doc:name="Reduce Exchange Assets">
+                    <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/json
+%output application/java
+---
+payload map {
+  assetId: $.assetId,
+  type: $.type,
+  name: $.name,
+  status: $.status,
+  rating: $.rating,
+  numberOfRates: $.numberOfRates,
+  categories: flatten ($.categories.value when ((sizeOf $.categories) > 0) otherwise [])
+}]]></dw:set-payload>
+				</dw:transform-message>
+                <logger message="CID: #[flowVars.MULE_CORRELATION_ID] :: Number of Assets in Response: #[payload.size()]" level="INFO" doc:name="Log Number of Assets in Response"/>
+				<dw:transform-message doc:name="Append Assets to Assets List">
+                    <dw:set-variable variableName="assetsList"><![CDATA[%dw 1.0
+%output application/java
+---
+flowVars.assetsList ++ payload]]></dw:set-variable>
+				</dw:transform-message>
+                <logger message="Size of Assets List: #[flowVars.assetsList.size()]" level="INFO" doc:name="Log Size of Assets List"/>
+				<choice doc:name="More Assets?">
+					<when expression="#[payload.size() &gt; 0]">
+						<dw:transform-message doc:name="Update Offset">
+                            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+flowVars.offset + flowVars.limit]]></dw:set-payload>
+                            <dw:set-variable variableName="offset"><![CDATA[%dw 1.0
+%output application/java
+---
+flowVars.offset + flowVars.limit]]></dw:set-variable>
+						</dw:transform-message>
+						<flow-ref name="get-exchange-pagesFlow" doc:name="GET Exchange Pages" />
+					</when>
+					<otherwise>
+						<logger level="DEBUG" doc:name="do nothing" />
+					</otherwise>
+				</choice>
+			</when>
+			<otherwise>
+				<logger message="Http status from getTotalAssets call: #[message.inboundProperties['http.status']] for OrgId: #[flowVars.rootOrgId], ignoring for now" level="INFO"
+					doc:name="No Mas" />
+			</otherwise>
+		</choice>
+	</flow>
+
+</mule>

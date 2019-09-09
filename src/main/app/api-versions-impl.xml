@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting"
+	xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+	<flow name="api-versions-organizationFlow">
+		<enricher target="#[flowVars.MULE_CORRELATION_ID]" doc:name="Message Enricher">
+			<flow-ref name="check-correlationFlow" doc:name="check-correlationFlow" />
+		</enricher>
+		<flow-ref name="authenticate-with-anypointFlow" doc:name="Authenticate w/ Anypoint" />
+		<logger
+			message="CID: #[flowVars.MULE_CORRELATION_ID] :: Access Token: #[payload.access_token]"
+			level="INFO" doc:name="Log Access Token" />
+        <flow-ref name="lookup-organization-nameFlow" doc:name="Lookup Organization Name"/>
+		<flow-ref name="retrieve-environmentsFlow" doc:name="Retrieve Environments" />
+		<collection-splitter doc:name="Environments Splitter">
+			<expression-message-info-mapping
+				messageIdExpression="#[message.id]" correlationIdExpression="#[message.correlationId]" />
+		</collection-splitter>
+        <dw:transform-message doc:name="Set Environment Variables">
+            <dw:set-variable variableName="environmentId"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.envID]]></dw:set-variable>
+            <dw:set-variable variableName="environmentName"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.envName]]></dw:set-variable>
+        </dw:transform-message>
+		<enricher target="#[flowVars.contractsByEnv]" doc:name="Message Enricher">
+			<flow-ref name="retrieve-api-versionsFlow" doc:name="Retrieve API Versions" />
+		</enricher>
+        <set-payload value="#[flowVars.contractsByEnv]" doc:name="Set Payload"/>
+		<collection-aggregator failOnTimeout="true"
+			doc:name="Environments Aggregator" />
+		<dw:transform-message doc:name="Add Organization Details">
+			<dw:set-payload><![CDATA[%dw 1.0
+%input payload application/java
+%output application/java
+%function sumTotalActiveAPIs(type) ((sum payload[?($.type == type)].totalActiveAPIs[?($ > 0)]) default 0)
+%var orgSandboxTotalActiveAPIs = sumTotalActiveAPIs("sandbox")
+%var orgProductionTotalActiveAPIs = sumTotalActiveAPIs("production")
+---
+{
+	organization: {
+		name: flowVars.organizationName,
+		environments: payload
+	} 
+
+}]]></dw:set-payload>
+		</dw:transform-message>
+		<dw:transform-message doc:name="Add API Status">
+			<dw:set-payload><![CDATA[%dw 1.0
+%input payload application/java
+%output application/json
+---
+{
+	apiStatus: {
+    		name: "Anypoint KPI System API",
+	    status: "OK",
+ 	   	statusCode: "200",
+	    	description: "API versions successfully retrieved for organization: " ++ flowVars.organizationName,
+	    link: "http://anypoint.kpi.system.api/200.html",
+    		transactionId: flowVars.MULE_CORRELATION_ID,
+    		timestamp: now as :datetime
+    },
+    organization: payload.organization
+ }   ]]></dw:set-payload>
+		</dw:transform-message>
+	</flow>
+	<flow name="api-versions-environmentFlow">
+    		<enricher target="#[flowVars.MULE_CORRELATION_ID]" doc:name="Message Enricher">
+        		<flow-ref name="check-correlationFlow" doc:name="check-correlationFlow"/>
+        </enricher>
+        <flow-ref name="authenticate-with-anypointFlow" doc:name="authenticate-with-anypointFlow"/>
+        <logger message="CID: #[flowVars.MULE_CORRELATION_ID] :: Access Token: #[payload.access_token] OrganizationName: #[flowVars.organizationName]" level="INFO" doc:name="Log Access Token"/>
+        <flow-ref name="retrieve-environmentFlow" doc:name="Retrieve Environment ID"/>
+        <choice doc:name="Does environment exist?">
+            <when expression="#[payload != empty]">
+                <dw:transform-message doc:name="Set Environment ID">
+                    <dw:set-variable variableName="environmentId"><![CDATA[%dw 1.0
+%input payload application/java
+%output application/java
+---
+payload.envID]]></dw:set-variable>
+                </dw:transform-message>
+                <logger message="CID: #[flowVars.MULE_CORRELATION_ID] :: Environment Name: #[flowVars.environmentName] Environment ID: #[flowVars.environmentId]" level="INFO" doc:name="Log Environment ID"/>
+                <flow-ref name="retrieve-api-versionsFlow" doc:name="Retrieve API Versions"/>
+                <dw:transform-message doc:name="Add API Status">
+                    <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/java
+%output application/json
+---
+{
+	apiStatus: {
+    		name: "Anypoint KPI System API",
+	    status: "OK",
+ 	   	statusCode: "200",
+    		description: "API versions successfully retrieved for environment: " ++ flowVars.environmentName ++ ".",
+	    link: "http://anypoint.kpi.system.api/200.html",
+    		transactionId: flowVars.MULE_CORRELATION_ID,
+    		timestamp: now as :datetime
+    },
+    environment: payload
+}   ]]></dw:set-payload>
+                </dw:transform-message>
+            </when>
+            <otherwise>
+                <logger level="INFO" doc:name="Log Environment Not Found" message="CID: #[flowVars.MULE_CORRELATION_ID] :: Environment '#[flowVars.environmentName]' not found for organization '#[flowVars.organizationId]'."/>
+                <scripting:transformer doc:name="Throw Env Not Found Exception">
+                    <scripting:script engine="Groovy"><![CDATA[throw new org.mule.module.apikit.exception.NotFoundException("Environment " + message.getInvocationProperty('environmentName') + " not found. TransactionID: " + message.getInvocationProperty('MULE_CORRELATION_ID'));
+]]></scripting:script>
+                </scripting:transformer>
+            </otherwise>
+        </choice>
+    </flow>
+    <flow name="retrieve-api-versionsFlow">
+        <flow-ref name="retrieve-apisFlow" doc:name="Retrieve APIs"/>
+        <dw:transform-message doc:name="Flatten APIs Payload">
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/java
+%output application/java
+---
+((flatten payload).assetId distinctBy $.assetId) when ((sizeOf (flatten payload)) > 0) otherwise []]]></dw:set-payload>
+            <dw:set-variable variableName="apiList"><![CDATA[%dw 1.0
+%input payload application/java
+%output application/java
+---
+flatten payload]]></dw:set-variable>
+        </dw:transform-message>
+        <logger message="CID: #[flowVars.MULE_CORRELATION_ID] :: Number of APIs: #[payload.size()]" level="INFO" doc:name="Log Number APIs"/>
+        <choice doc:name="APIs?">
+            <when expression="#[payload != empty]">
+                <collection-splitter doc:name="API List Splitter">
+                    <expression-message-info-mapping messageIdExpression="#[message.id]" correlationIdExpression="#[message.correlationId]"/>
+                </collection-splitter>
+                <dw:transform-message doc:name="Collect API Versions">
+                    <dw:input-payload mimeType="application/java"/>
+                    <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/java
+%output application/java
+%var api = (flowVars.apiList filter ($.assetId == payload))
+---
+{
+	assetId: api[0].assetId,
+	id: api[0].id,
+	organizationId: api[0].organizationId,
+	environmentId: api[0].environmentId,
+	versions: api.assetVersion
+}]]></dw:set-payload>
+                </dw:transform-message>
+                <collection-aggregator failOnTimeout="true" doc:name="API List Aggregator"/>
+            </when>
+            <otherwise>
+                <logger message="CID: #[flowVars.MULE_CORRELATION_ID] :: No APIs found." level="INFO" doc:name="Log No APIs"/>
+            </otherwise>
+        </choice>
+        <dw:transform-message doc:name="Add Environment Information">
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/java
+%output application/java
+%function calcVersionsPct(apiList) ((((sizeOf (apiList filter ((sizeOf $.versions) > 1))) / (sizeOf apiList)) as :number as :string {format: "#,##0.0#%"}) when ((sizeOf apiList) > 0) otherwise "N/A")
+%function calcNumVersions(apiList) (apiList reduce ((elt, acc = 0) -> acc + (sizeOf elt.versions)))
+%function calcAvgVersions(apiList) ((((calcNumVersions(apiList)) / (sizeOf apiList)) as :number as :string {format: "#0.00"}) when ((sizeOf apiList) > 0) otherwise "N/A") 
+---
+{
+	name: flowVars.environmentName,
+    	id: flowVars.environmentId, 
+    	moreThanOneVersionPercentage: calcVersionsPct(payload),
+    	avgNumberOfVersions: calcAvgVersions(payload), 
+    	apis: ((payload orderBy ((api) -> (sizeOf api.versions)))[-1..0]) when ((sizeOf payload) > 0) otherwise []
+    	
+}]]></dw:set-payload>
+        </dw:transform-message>
+    </flow>
+    <flow name="retrieve-apisFlow">
+        <set-variable variableName="basePath" value="/apimanager/api/${api.manager.API.version}/organizations/#[flowVars.organizationId]/environments/#[flowVars.environmentId]" doc:name="Set BasePath"/>
+    		<http:request config-ref="BasePath_HTTP_Request_Configuration" path="/apis" method="GET" doc:name="GET APIs for Versions">
+            <http:request-builder>
+                <http:header headerName="Authorization" value="#[flowVars.bearerToken]"/>
+            </http:request-builder>
+            <http:success-status-code-validator values="0..599"/>
+        </http:request>
+        <dw:transform-message doc:name="JSON2Java">
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/json
+%output application/java
+---
+payload]]></dw:set-payload>
+            <dw:set-variable variableName="apisExist"><![CDATA[%dw 1.0
+%input payload application/json
+%output application/java
+---
+(payload != null) and ((sizeOf payload) > 0) and (payload.assets != null) and ((sizeOf payload.assets) > 0)]]></dw:set-variable>
+        </dw:transform-message>
+        <choice doc:name="Do APIs exist?">
+            <when expression="#[flowVars.apisExist]">
+                <dw:transform-message doc:name="Extract APIs">
+                    <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/java
+%output application/java
+---
+payload.assets map ((assetItem, assetIndex) -> 
+	assetItem.apis map ((apiItem, apiIndex) -> {
+		assetId: apiItem.assetId,
+		id: apiItem.id,
+		organizationId: apiItem.organizationId,
+		environmentId: apiItem.environmentId,
+		assetVersion: apiItem.assetVersion,
+		activeContractsCount: apiItem.activeContractsCount	
+	})
+)]]></dw:set-payload>
+                </dw:transform-message>
+            </when>
+            <otherwise>
+                <logger message="CID: #[flowVars.MULE_CORRELATION_ID] :: No APIs found for environment: #[flowVars.environmentId]" level="INFO" doc:name="Log No APIs Found"/>
+                <set-payload value="#[[[]]]" doc:name="Set Payload"/>
+                <!-- 
+                <scripting:transformer doc:name="Throw APIs Not Found Exception">
+                    <scripting:script engine="Groovy"><![CDATA[throw new org.mule.module.apikit.exception.NotFoundException("No APIs found for environment:" +  message.getInvocationProperty('environmentID') + " - TransactionID: " + message.getInvocationProperty('MULE_CORRELATION_ID'));
+]]></scripting:script>
+                </scripting:transformer>
+                -->
+            </otherwise>
+        </choice>
+    </flow>
+</mule>

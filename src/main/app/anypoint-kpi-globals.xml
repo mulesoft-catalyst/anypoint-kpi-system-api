@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw"
+	xmlns:api-platform-gw="http://www.mulesoft.org/schema/mule/api-platform-gw" xmlns:context="http://www.springframework.org/schema/context" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
+http://www.mulesoft.org/schema/mule/api-platform-gw http://www.mulesoft.org/schema/mule/api-platform-gw/current/mule-api-platform-gw.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+    <context:property-placeholder location="anypoint-kpi-${mule.env}.properties"/>
+    <api-platform-gw:api apiName="groupId:85720984-fa27-4bbd-8213-5ecac9e8d93e:assetId:anypoint-kpi-system-api" version="1.0.0:15510193" flowRef="anypoint-kpi-system-api-main" create="true" apikitRef="anypoint-kpi-system-api-config" doc:name="API Autodiscovery"/>
+	<http:request-config name="HTTP_Request_Configuration" protocol="HTTPS" host="anypoint.mulesoft.com" port="443" doc:name="HTTP Request Configuration"/>
+	<http:request-config name="BasePath_HTTP_Request_Configuration" protocol="HTTPS" host="anypoint.mulesoft.com" port="443" basePath="#[flowVars.basePath]" doc:name="HTTP Request Configuration"/>
+	<flow name="authenticate-with-anypointFlow">
+        <dw:transform-message doc:name="Set Credentials">
+        	<dw:input-payload mimeType="application/java"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/java
+%output application/json
+---
+{
+	username: p('username'),
+	password: p('password')
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <http:request config-ref="HTTP_Request_Configuration" path="/accounts/login" method="POST" doc:name="Authenticate w/ Anypoint Platform">
+            <http:request-builder>
+                <http:header headerName="Content-Type" value="application/json"/>
+            </http:request-builder>
+        </http:request>
+        <dw:transform-message doc:name="JSON2Java">
+        	<dw:input-payload mimeType="application/json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/json
+%output application/java
+---
+payload]]></dw:set-payload>
+            <dw:set-variable variableName="bearerToken"><![CDATA[%dw 1.0
+%input payload application/json
+%output application/java
+---
+"Bearer " ++ payload.access_token]]></dw:set-variable>
+        </dw:transform-message>
+        <logger message="CID: #[flowVars.MULE_CORRELATION_ID] :: Payload: #[payload]" level="INFO" doc:name="Log Authentication Response"/>
+        <logger message="CID: #[flowVars.MULE_CORRELATION_ID] :: Bearer Token: #[flowVars.bearerToken]" level="INFO" doc:name="Log Bearer Token"/>
+    </flow>
+    <flow name="lookup-organization-nameFlow">
+        <logger message="CID: #[flowVars.MULE_CORRELATION_ID] :: Organizaton ID: #[flowVars.organizationId]" level="INFO" doc:name="Log Organization ID"/>
+        <set-variable variableName="basePath" value="/accounts/api/organizations/#[flowVars.organizationId]" doc:name="Set BasePath"/>
+    		 <http:request config-ref="BasePath_HTTP_Request_Configuration" path="/" method="GET" doc:name="Get Organization Details">
+            <http:request-builder>
+                <http:header headerName="Authorization" value="#[flowVars.bearerToken]"/>
+                <http:header headerName="Content-Type" value="application/json"/>
+            </http:request-builder>
+        </http:request>
+        <dw:transform-message doc:name="JSON2Java">
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/json
+%output application/java
+---
+payload]]></dw:set-payload>
+        </dw:transform-message>
+        <dw:transform-message doc:name="Retrieve Organization Name">
+            <dw:set-variable variableName="organizationName"><![CDATA[%dw 1.0
+%input payload application/java
+%output application/java
+---
+payload.name]]></dw:set-variable>
+        </dw:transform-message>
+        <logger message="CID: #[flowVars.MULE_CORRELATION_ID] :: Organizaton Name: #[flowVars.organizationName]" level="INFO" doc:name="Log Organization Name"/>
+    </flow>
+    <flow name="retrieve-environmentsFlow">
+        <set-variable variableName="basePath" value="/accounts/api/organizations/#[flowVars.organizationId]" doc:name="Set BasePath"/>
+        <http:request config-ref="BasePath_HTTP_Request_Configuration" path="/environments" method="GET" doc:name="Retrieve Environments by Organization">
+            <http:request-builder>
+                <http:header headerName="Authorization" value="#[flowVars.bearerToken]"/>
+            </http:request-builder>
+        </http:request>
+        <dw:transform-message doc:name="Parse Environments">
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/json
+%output application/java
+---
+payload.data map {
+	envID: $.id,
+	envName: $.name,
+	envType: $.type
+}]]></dw:set-payload>
+        </dw:transform-message>
+    </flow>
+    <flow name="retrieve-environmentFlow">
+        <flow-ref name="retrieve-environmentsFlow" doc:name="Retrieve Environments"/>
+        <dw:transform-message doc:name="Retrieve Environment">
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/java
+%output application/java
+%var env = (payload filter ($.envName == flowVars.environmentName))
+---
+env[0] when ((sizeOf env) > 0) otherwise ""]]></dw:set-payload>
+        </dw:transform-message>
+    </flow>
+    <flow name="check-correlationFlow">
+		<choice doc:name="Does CID exist?">
+			<when expression="#[message.inboundProperties.CORRELATION_ID != null]">
+				<set-payload value="#[message.inboundProperties.CORRELATION_ID]"
+					doc:name="Set Correlation ID" />
+			</when>
+			<otherwise>
+				<set-payload value="#[function:uuid]" doc:name="Generation Correlation ID" />
+
+			</otherwise>
+		</choice>
+	</flow>
+</mule>

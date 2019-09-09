@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+
+	<flow name="get-exchange-assets-ratings">
+		<enricher target="#[flowVars.MULE_CORRELATION_ID]" doc:name="Message Enricher">
+			<flow-ref name="check-correlationFlow" doc:name="check-correlationFlow" />
+		</enricher>
+		<!-- <logger message="ExecutionId: #[flowVars.executionId] - Get total 
+			assets" level="INFO" doc:name="Logger" /> -->
+		<flow-ref name="authenticate-with-anypointFlow" doc:name="Authenticate w/ Anypoint" />
+		<logger
+			message="CID: #[flowVars.MULE_CORRELATION_ID] :: Access Token: #[payload.access_token]"
+			level="INFO" doc:name="Log Access Token" />
+		<dw:transform-message doc:name="Initialize Variables">
+			<dw:input-payload mimeType="application/java" />
+			<dw:set-variable variableName="offset"><![CDATA[%dw 1.0
+%output application/java
+---
+0]]></dw:set-variable>
+			<dw:set-variable variableName="limit"><![CDATA[%dw 1.0
+%output application/java
+---
+p('exchange.page.limit')]]></dw:set-variable>
+			<dw:set-variable variableName="assetsList"><![CDATA[%dw 1.0
+%output application/java
+---
+[]]]></dw:set-variable>
+			<dw:set-variable variableName="rootOrgId"><![CDATA[%dw 1.0
+%input payload application/java
+%output application/java
+---
+flowVars.organizationId]]></dw:set-variable>
+		</dw:transform-message>
+		<flow-ref name="get-exchange-pagesFlow" doc:name="GET Exchange Pages" />
+		<logger
+			message="CID: #[flowVars.MULE_CORRELATION_ID] :: Total Size of Asset List: #[flowVars.assetsList]"
+			level="INFO" doc:name="Log Size of Total Asset List" />
+		<dw:transform-message doc:name="Caclulate Asset Ratings by Type">
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/java
+%output application/java
+%function process(assets) {
+	((assets groupBy $.type mapObject (v, k) -> {
+  		(k): sizeOf v
+	}) when (sizeOf assets) > 0 otherwise {})
+}
+---
+{
+	lessThanTwoFive: process(flowVars.assetsList filter ($.rating < 2.5)),
+	twoFiveToThreeFive: process(flowVars.assetsList filter ($.rating < 3.5 and $.rating >= 2.5)),
+ 	threeFiveToFour: process(flowVars.assetsList filter ($.rating < 4 and $.rating >= 3.5)),
+ 	fourToFourFive: process(flowVars.assetsList filter ($.rating < 4.5 and $.rating >= 4)),
+ 	greaterThanFourFive: process(flowVars.assetsList filter ($.rating >= 4.5))
+}]]></dw:set-payload>
+		</dw:transform-message>
+		<dw:transform-message doc:name="Add API Status">
+			<dw:set-payload><![CDATA[%dw 1.0
+%input payload application/java
+%output application/json
+---
+{
+	apiStatus: {
+    		name: "Anypoint KPI System API",
+	    status: "OK",
+ 	   	statusCode: "200",
+    		description: "Anypoint Exchange asset ratings successfully retrieved.",
+    		transactionId: flowVars.MULE_CORRELATION_ID,
+    		timestamp: now as :datetime
+    },
+    assets: flowVars.assetsList,
+    assetRatings: payload
+}   ]]></dw:set-payload>
+		</dw:transform-message>
+	</flow>
+
+
+</mule>

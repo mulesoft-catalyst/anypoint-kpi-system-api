@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+    <http:listener-config name="anypoint-kpi-system-api-httpListenerConfig" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration" />
+    <apikit:config name="anypoint-kpi-system-api-config" raml="anypoint-kpi-system-api.raml" consoleEnabled="false" doc:name="Router" />
+    <flow name="anypoint-kpi-system-api-main">
+        <http:listener config-ref="anypoint-kpi-system-api-httpListenerConfig" path="/kpi/${api.version}/*" doc:name="HTTP" />
+        <apikit:router config-ref="anypoint-kpi-system-api-config" doc:name="APIkit Router" />
+        <exception-strategy ref="anypoint-kpi-system-api-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy" />
+    </flow>
+    <flow name="anypoint-kpi-system-api-console">
+        <http:listener config-ref="anypoint-kpi-system-api-httpListenerConfig" path="/console/*" doc:name="HTTP" />
+        <apikit:console config-ref="anypoint-kpi-system-api-config" doc:name="APIkit Console" />
+    </flow>
+    <flow name="get:/exchange/assets/{organizationId}/ratings:anypoint-kpi-system-api-config">
+        <flow-ref name="get-exchange-assets-ratings" doc:name="GET Exchange Assets Ratings" />
+    </flow>
+    <flow name="get:/exchange/assets/{organizationId}:anypoint-kpi-system-api-config">
+        <flow-ref name="get-exchange-assetsFlow" doc:name="GET Exchange Assets" />
+    </flow>
+    <flow name="get:/organization/{organizationId}/name:anypoint-kpi-system-api-config">
+        <flow-ref name="organization-system-api-implFlow" doc:name="organization-system-api-implFlow" />
+    </flow>
+    <flow name="get:/apis/{organizationId}:anypoint-kpi-system-api-config">
+        <flow-ref name="activeAPIs-organizationFlow" doc:name="GET Active APIs for Organization" />
+    </flow>
+    <flow name="get:/apis/{organizationId}/{environmentName}:anypoint-kpi-system-api-config">
+        <flow-ref name="activeAPIs-environmentFlow" doc:name="GET Active APIs for Environment" />
+    </flow>
+    <flow name="get:/applications/{organizationId}:anypoint-kpi-system-api-config">
+        <flow-ref name="activeApplications-organizationFlow" doc:name="GET Active Applications for Organization" />
+    </flow>
+    <flow name="get:/applications/{organizationId}/{environmentName}:anypoint-kpi-system-api-config">
+        <flow-ref name="activeApplications-environmentFlow" doc:name="GET Active Applications for Environment" />
+    </flow>
+    <flow name="get:/vCores/{organizationId}:anypoint-kpi-system-api-config">
+        <dw:transform-message doc:name="Set Accept Header">
+            <dw:set-variable variableName="acceptHeader"><![CDATA[%dw 1.0
+%output application/java
+---
+inboundProperties.accept]]></dw:set-variable>
+        </dw:transform-message>
+        <logger message="CID: #[flowVars.MULE_CORRELATION_ID] :: Accept Header: #[flowVars.acceptHeader]" level="INFO" doc:name="Log Accept Header" />
+        <choice doc:name="CSV or JSON?">
+            <when expression="#[(flowVars.acceptHeader != empty) &amp;&amp; (flowVars.acceptHeader == &quot;application/csv&quot;)]">
+                <flow-ref name="vcores-used-organization-csvFlow" doc:name="GET vCores Used for Organization - CSV" />
+            </when>
+            <otherwise>
+                <flow-ref name="vCores-used-organizationFlow" doc:name="GET vCores Used for Organization" />
+            </otherwise>
+        </choice>
+    </flow>
+    <flow name="get:/vCores/{organizationId}/{environmentName}:anypoint-kpi-system-api-config">
+        <flow-ref name="vCores-used-environmentFlow" doc:name="GET vCores Used for Environment" />
+    </flow>
+    <flow name="get:/vCores/{organizationId}/{environmentName}/{applicationName}:anypoint-kpi-system-api-config">
+        <flow-ref name="vCores-used-applicationFlow" doc:name="GET vCores Used for Application" />
+    </flow>
+    <flow name="get:/runtimes/versions/{organizationId}:anypoint-kpi-system-api-config">
+        <flow-ref name="runtimeVersions-organizationFlow" doc:name="GET Runtime Versions for Organization" />
+    </flow>
+    <flow name="get:/runtimes/versions/{organizationId}/{environmentName}:anypoint-kpi-system-api-config">
+        <flow-ref name="runtimeVersions-environmentFlow" doc:name="GET Runtime Versions for Environment" />
+    </flow>
+    <flow name="get:/reuse/{organizationId}/{environmentName}:anypoint-kpi-system-api-config">
+        <flow-ref name="reuse-metrics-environmentlFlow" doc:name="GET Reuse Metrics - Environment" />
+    </flow>
+    <flow name="get:/reuse/{organizationId}:anypoint-kpi-system-api-config">
+        <flow-ref name="reuse-metrics-organizationFlow" doc:name="GET Reuse Metrics - Organization" />
+    </flow>
+    <flow name="get:/apis/contracts/{organizationId}:anypoint-kpi-system-api-config">
+        <flow-ref name="api-contracts-organizationFlow" doc:name="GET API Contracts - Organization" />
+    </flow>
+    <flow name="get:/apis/contracts/{organizationId}/{environmentName}:anypoint-kpi-system-api-config">
+        <flow-ref name="api-contracts-environmentlFlow" doc:name="GET API Contracts - Environment" />
+    </flow>
+    <flow name="get:/apis/versions/{organizationId}:anypoint-kpi-system-api-config">
+        <flow-ref name="api-versions-organizationFlow" doc:name="GET API Versions - Organization" />
+    </flow>
+    <flow name="get:/apis/versions/{organizationId}/{environmentName}:anypoint-kpi-system-api-config">
+        <flow-ref name="api-versions-environmentFlow" doc:name="GET API Versions -  Environment" />
+    </flow>
+    <flow name="get:/apis/policies/{organizationId}:anypoint-kpi-system-api-config">
+        <flow-ref name="api-policies-organizationFlow" doc:name="GET API Policies - Organization"/>
+    </flow>
+    <flow name="get:/apis/policies/{organizationId}/{environmentName}:anypoint-kpi-system-api-config">
+        <flow-ref name="api-policies-environmentlFlow" doc:name="GET API Policies - Environment"/>
+    </flow>
+    <apikit:mapping-exception-strategy name="anypoint-kpi-system-api-apiKitGlobalExceptionMapping" enableNotifications="false">
+        <apikit:mapping statusCode="404">
+            <apikit:exception value="org.mule.module.apikit.exception.NotFoundException" />
+            <set-variable variableName="message" value="#[exception.getCauseException().getMessage()]" doc:name="Get Exception Message" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <dw:transform-message doc:name="Send 404 Message">
+                <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+  apiStatus: {
+    name: "Anypoint KPI System API",
+    status: "Not Found",
+    statusCode: "404",
+    description: flowVars.message,
+    link: "http://anypoint.kpi.system.api/404.html",
+    transactionId: "N/A"
+    }
+}]]></dw:set-payload>
+            </dw:transform-message>
+        </apikit:mapping>
+        <apikit:mapping statusCode="401">
+            <apikit:exception value="org.mule.module.http.internal.request.ResponseValidatorException" />
+            <set-variable variableName="message" value="#[exception.getCauseException().getMessage()]" doc:name="Get Exception Message" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <dw:transform-message doc:name="Send 401 Message">
+                <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+  apiStatus: {
+    name: "Anypoint KPI System API",
+    status: "Unauthorized",
+    statusCode: "401",
+    description: flowVars.message,
+    link: "http://anypoint.kpi.system.api/401.html",
+    transactionId: "N/A"
+    }
+}]]></dw:set-payload>
+            </dw:transform-message>
+        </apikit:mapping>
+        <apikit:mapping statusCode="405">
+            <apikit:exception value="org.mule.module.apikit.exception.MethodNotAllowedException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Method not allowed&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="415">
+            <apikit:exception value="org.mule.module.apikit.exception.UnsupportedMediaTypeException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Unsupported media type&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="406">
+            <apikit:exception value="org.mule.module.apikit.exception.NotAcceptableException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Not acceptable&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="400">
+            <apikit:exception value="org.mule.module.apikit.exception.BadRequestException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Bad request&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+    </apikit:mapping-exception-strategy>
+</mule>

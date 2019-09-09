@@ -1,0 +1,51 @@
+#%RAML 1.0 NamedExample
+value:
+  apiStatus:
+    name: Anypoint KPI System API
+    status: OK
+    statusCode: "200"
+    description: API policies successfully retrieved.
+    transactionId: e77af5b0-9bf8-11e8-9002-c4b301c8ce19
+    timestamp: 2019-01-02T14:06:58.611-07:00
+    
+  organization:
+    name: TheOrganization
+    environments:
+      - 
+        name: Development
+        id: 9fe156aa-5b63-450c-8e20-ad065dd12d80
+        noPolicyPercentage: 0.0%
+        withPolicyPercentage: 100.0%
+        apiPolicies:
+          - 
+            assetId: access-token-provider-system-api
+            assetVersion: 1.0.0
+            policies:
+              - 
+                muleVersion: 3
+                policyId: 438494
+                policyTemplateId: client-id-enforcement
+          -
+            assetId: address-api
+            assetVersion: 2.0.0
+            policies:
+              -
+                muleVersion: 4
+                policyTemplateId: "307"
+                policyTemplateGroupId: 68ef9520-24e9-4cf2-b2f5-620025690913
+                policyTemplateAssetId: rate-limiting-sla-based
+                policyTemplateAssetVersion: 1.1.1
+      -
+        name: Production
+        id: 87e5afd0-b791-4431-9627-b353de1e402e
+        noPolicyPercentage: 0.0%
+        withPolicyPercentage: 100.0%
+        apiPolicies:
+          - 
+            assetId: address-api
+            assetVersion: 2.0.0
+            policies: 
+              - 
+                muleVersion: 3
+                policyId: 296077
+                policyTemplateId: rate-limiting

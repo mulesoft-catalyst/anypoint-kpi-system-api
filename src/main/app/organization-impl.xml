@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd">
+    <flow name="organization-system-api-implFlow">
+    		<enricher target="#[flowVars.MULE_CORRELATION_ID]" doc:name="Message Enricher">
+        		<flow-ref name="check-correlationFlow" doc:name="check-correlationFlow"/>
+        </enricher>
+        <flow-ref name="authenticate-with-anypointFlow" doc:name="authenticate-with-anypointFlow"/>
+        <logger message="CID: #[flowVars.MULE_CORRELATION_ID] :: Access Token: #[payload.access_token] OrganizationName: #[flowVars.organizationName]" level="INFO" doc:name="Log Access Token"/>
+        <flow-ref name="lookup-organization-nameFlow" doc:name="lookup-organization-nameFlow"/>
+        <dw:transform-message doc:name="Add API Status">
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/java
+%output application/json
+---
+{
+	apiStatus: {
+    		name: "Anypoint KPI System API",
+	    status: "OK",
+ 	   	statusCode: "200",
+    		description: "Organization name successfully retrieved.",
+	    link: "http://anypoint.kpi.system.api/200.html",
+    		transactionId: flowVars.MULE_CORRELATION_ID
+    },
+    organizationName: flowVars.organizationName
+}   ]]></dw:set-payload>
+        </dw:transform-message>
+    </flow>
+</mule>
