@@ -16,5 +16,7 @@ KPIs Supported:
 * Top 10 - Number of API Versions
 * vCore Usage
 * Runtime Versions Used
+* API Versions per Environment
+* API Policies Applied per Environment
 * Number of Exchange Assets
 * Overall Asset Satisfaction
