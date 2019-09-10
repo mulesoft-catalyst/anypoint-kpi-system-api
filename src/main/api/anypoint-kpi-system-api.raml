@@ -1,12 +1,13 @@
 #%RAML 1.0
 title: Anypoint KPI System API
 version: v1
-baseUri: https://anypoint.mulesoft.com/mocking/api/v1/links/70f7a166-f575-4626-9f5a-c3aca1d4bdcb/ # 
 
-mediaType: [application/json, application/xml, application/yaml, text/plain, application/csv]
+#mediaType: [application/json, application/xml, application/yaml, text/plain, application/csv]
+mediaType: [application/json, application/csv]
 #mediaType: [application/json]
 
 # baseUri: http://localhost:8081/kpi
+baseUri: https://anypoint.mulesoft.com/mocking/api/v1/links/70f7a166-f575-4626-9f5a-c3aca1d4bdcb/ # 
 
 traits:
   client-id-required:
@@ -21,37 +22,37 @@ traits:
           body:
             application/json:
               type: APIStatus-Response
-              example: !include examples/API-Status-Response-400.raml
+              examples: !include examples/API-Status-Response-400.raml
         401:
           body:
             application/json:
               type: APIStatus-Response
-              example: !include examples/API-Status-Response-401.raml
+              examples: !include examples/API-Status-Response-401.raml
         403:
           body:
             application/json:
               type: APIStatus-Response
-              example: !include examples/API-Status-Response-403.raml
+              examples: !include examples/API-Status-Response-403.raml
         404:
           body:
             application/json:
               type: APIStatus-Response
-              example: !include examples/API-Status-Response-404.raml
+              examples: !include examples/API-Status-Response-404.raml
         500:
           body:
             application/json:
               type: APIStatus-Response
-              example: !include examples/API-Status-Response-500.raml
+              examples: !include examples/API-Status-Response-500.raml
         502:
           body:
             application/json:
               type: APIStatus-Response
-              example: !include examples/API-Status-Response-502.raml
+              examples: !include examples/API-Status-Response-502.raml
         504:
           body:
             application/json:
               type: APIStatus-Response
-              example: !include examples/API-Status-Response-504.raml
+              examples: !include examples/API-Status-Response-504.raml
 
 
 types:
@@ -121,6 +122,7 @@ types:
       totalActiveAPIs:
         description: The total number of active APIs provided by the organization.
         type: number
+
 
 # Active Applications
   Application:
@@ -603,7 +605,7 @@ types:
           body: 
             application/json:
               type: Active-APIs-Organization-Response
-              example: !include examples/Active-APIs-Organization-Response-200.raml
+              examples: !include examples/Active-APIs-Organization-Response-200.raml
     /{environmentName}:
       is: [client-id-required, error-codes-support]
       displayName: Environment
@@ -615,7 +617,7 @@ types:
             body: 
               application/json:
                 type: Active-APIs-Environment-Response
-                example: !include examples/Active-APIs-Environment-Response-200.raml
+                examples: !include examples/Active-APIs-Environment-Response-200.raml
 
 # APIs                
 /apis:
@@ -632,7 +634,7 @@ types:
           body: 
             application/json:
               type: Active-APIs-Organization-Response
-              example: !include examples/Active-APIs-Organization-Response-200.raml
+              examples: !include examples/Active-APIs-Organization-Response-200.raml
     /{environmentName}:
       is: [client-id-required, error-codes-support]
       displayName: Environment
@@ -644,7 +646,7 @@ types:
             body: 
               application/json:
                 type: Active-APIs-Environment-Response
-                example: !include examples/Active-APIs-Environment-Response-200.raml
+                examples: !include examples/Active-APIs-Environment-Response-200.raml
   # APIs Contracts
   /contracts:
     is: [client-id-required, error-codes-support]
@@ -659,7 +661,7 @@ types:
             body: 
               application/json:
                 type: API-Contracts-Organization-Response
-                example: !include examples/API-Contracts-Organization-Response-200.raml
+                examples: !include examples/API-Contracts-Organization-Response-200.raml
       /{environmentName}: 
         displayName: Name of an environment within the organization.
         get:
@@ -670,7 +672,7 @@ types:
               body: 
                 application/json:
                   type: API-Contracts-Environment-Response
-                  example: !include examples/API-Contracts-Environment-Response-200.raml
+                  examples: !include examples/API-Contracts-Environment-Response-200.raml
 # API Policies
   /policies:
     is: [client-id-required, error-codes-support]
@@ -685,7 +687,7 @@ types:
             body: 
               application/json:
                 type: API-Policies-Organization-Response
-                example: !include examples/API-Policies-Organization-Response-200.raml
+                examples: !include examples/API-Policies-Organization-Response-200.raml
       /{environmentName}: 
         displayName: Name of an environment within the organization.
         get:
@@ -696,7 +698,7 @@ types:
               body: 
                 application/json:
                  type: API-Policies-Environment-Response
-                 example: !include examples/API-Policies-Environment-Response-200.raml
+                 examples: !include examples/API-Policies-Environment-Response-200.raml
   # API Versions
   /versions:
     displayName: API Versions
@@ -712,7 +714,7 @@ types:
             body: 
               application/json:
                 type: API-Versions-Organization-Response
-                example: !include examples/API-Versions-Organization-Response-200.raml
+                examples: !include examples/API-Versions-Organization-Response-200.raml
       /{environmentName}:
         is: [client-id-required, error-codes-support]
         displayName: Environment
@@ -724,7 +726,7 @@ types:
               body: 
                 application/json:
                  type: API-Versions-Environment-Response
-                 example: !include examples/API-Versions-Environment-Response-200.raml
+                 examples: !include examples/API-Versions-Environment-Response-200.raml
 
 # Exchange Assets
 /exchange:
@@ -742,7 +744,7 @@ types:
             body: 
               application/json:
                 type: Exchange-Assets-Response
-                example: !include examples/Exchange-Assets-Response-200.raml
+                examples: !include examples/Exchange-Assets-Response-200.raml
       /ratings:
         displayName: Exchange Asset Ratings
         description: Retrieves the asset ratings Exchange.
@@ -755,7 +757,7 @@ types:
               body: 
                 application/json:
                   type: Exchange-Assets-Ratings-Response
-                  example: !include examples/Exchange-Assets-Ratings-Response-200.raml
+                  examples: !include examples/Exchange-Assets-Ratings-Response-200.raml
    
 # Organization
 /organization:
@@ -773,7 +775,7 @@ types:
             body: 
               application/json:
                 type: Organization-Name-Response
-                example: !include examples/Organization-Name-Response-200.raml
+                examples: !include examples/Organization-Name-Response-200.raml
 # Reuse
 /reuse:
   displayName: Reuse calculation.
@@ -789,7 +791,7 @@ types:
           body: 
             application/json:
               type: Reuse-Metrics-Organization-Response
-              example: !include examples/Reuse-Metrics-Organization-Response-200.raml
+              examples: !include examples/Reuse-Metrics-Organization-Response-200.raml
     /{environmentName}:
       is: [client-id-required, error-codes-support]
       get:
@@ -800,7 +802,7 @@ types:
             body: 
               application/json:
                 type: Reuse-Metrics-Environment-Response
-                example: !include examples/Reuse-Metrics-Environment-Response-200.raml
+                examples: !include examples/Reuse-Metrics-Environment-Response-200.raml
 
 #Runtime Versions                
 /runtimes/versions:
@@ -817,7 +819,7 @@ types:
             body: 
               application/json:
                 type: Runtime-Versions-Organization-Response
-                example: !include examples/Runtime-Versions-Used-Organization-Response-200.raml
+                examples: !include examples/Runtime-Versions-Used-Organization-Response-200.raml
     /{environmentName}:
       is: [client-id-required, error-codes-support]
       displayName: Environment
@@ -829,7 +831,7 @@ types:
             body: 
               application/json:
                 type: Runtime-Versions-Environment-Response
-                example: !include examples/Runtime-Versions-Used-Environment-Response-200.raml
+                examples: !include examples/Runtime-Versions-Used-Environment-Response-200.raml
 
 # vCores
 /vCores:
@@ -846,10 +848,10 @@ types:
           body: 
             application/json:
               type: vCores-Organization-Response
-              example: !include examples/vCores-Organization-Response-200.raml
+              examples: !include examples/vCores-Organization-Response-200.raml
             application/csv:
               type: string[]
-              example: !include examples/vCores-Organization-CSV-Response-200.raml
+              examples: !include examples/vCores-Organization-CSV-Response-200.raml
     /{environmentName}:
       is: [client-id-required, error-codes-support]
       displayName: Environment
@@ -861,7 +863,7 @@ types:
             body: 
               application/json:
                 type: vCores-Environment-Response
-                example: !include examples/vCores-Environment-Response-200.raml
+                examples: !include examples/vCores-Environment-Response-200.raml
       /{applicationName}:
         is: [client-id-required, error-codes-support]
         displayName: Application
@@ -873,4 +875,4 @@ types:
               body: 
                 application/json:
                   type: vCores-Application-Response
-                  example: !include examples/vCores-Application-Response-200.raml
+                  examples: !include examples/vCores-Application-Response-200.raml
